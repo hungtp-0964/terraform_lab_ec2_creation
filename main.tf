@@ -3,7 +3,6 @@ variable "awsprops" {
     default = {
     region = "ap-northeast-1"
     vpc = "vpc-02c5bf61bcfe1f62f"
-    ami = "ami-088da9557aae42f39"
     itype = "t2.micro"
     subnet = "subnet-0e7512cf09e1eb26d"
     publicip = true
@@ -54,8 +53,29 @@ resource "aws_key_pair" "ec2-test-key" {
   public_key = "${file("id_rsa.pub")}"
 }
 
+data "aws_ami" "ubuntu" {
+    most_recent = true
+ 
+    filter {
+        name   = "name"
+        values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+    }
+ 
+    filter {
+        name   = "virtualization-type"
+        values = ["hvm"]
+    }
+ 
+    filter {
+        name   = "architecture"
+        values = ["x86_64"]
+    }
+ 
+    owners = ["099720109477"] # Canonical official
+}
+
 resource "aws_instance" "ec2-test" {
-  ami = lookup(var.awsprops, "ami")
+  ami = "${data.aws_ami.ubuntu.id}"
   instance_type = lookup(var.awsprops, "itype")
   subnet_id = lookup(var.awsprops, "subnet") #FFXsubnet2
   associate_public_ip_address = lookup(var.awsprops, "publicip")
@@ -78,4 +98,8 @@ resource "aws_instance" "ec2-test" {
 
 output "ec2instance" {
   value = aws_instance.ec2-test.public_ip
+}
+
+output "ubuntu_ami" {
+  value = data.aws_ami.ubuntu
 }
